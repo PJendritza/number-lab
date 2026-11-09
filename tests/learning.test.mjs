@@ -1,0 +1,7 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {question,record,createProfile,validStore,LIMITS} from '../app/learning.mjs';
+test('all generated arithmetic stays in its range, including nonnegative subtraction',()=>{for(const op of ['add','subtract'])for(let level=0;level<3;level++)for(let i=0;i<1000;i++){const q=question(op,level);assert(q.a>=0&&q.b>=0);assert(q.answer>=0&&q.answer<=LIMITS[level]);assert.equal(q.answer,op==='add'?q.a+q.b:q.a-q.b);}});
+test('promotion requires ten observations and nine independent successes',()=>{const s={level:0,history:[]};for(let i=0;i<9;i++)record(s,true);assert.equal(s.level,0);assert.equal(record(s,false),'up');assert.equal(s.level,1);assert.deepEqual(s.history,[]);});
+test('support lowers difficulty without crossing bounds',()=>{const s={level:1,history:[]};for(let i=0;i<10;i++)record(s,i<5);assert.equal(s.level,0);for(let i=0;i<20;i++)record(s,false);assert.equal(s.level,0);const top={level:2,history:[]};for(let i=0;i<20;i++)record(top,true);assert.equal(top.level,2);});
+test('operations and profiles keep separate evidence',()=>{const a=createProfile('A'),b=createProfile('B');for(let i=0;i<10;i++)record(a.skills.add,true);assert.equal(a.skills.add.level,1);assert.equal(a.skills.subtract.level,0);assert.equal(b.skills.add.level,0);assert(validStore({version:1,profiles:[a,b]}));assert(!validStore({version:1,profiles:[{...a,stars:-1}]}));});
