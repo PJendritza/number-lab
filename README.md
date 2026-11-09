@@ -11,7 +11,7 @@ python3 -m http.server 8070 --directory app
 node --test tests/*.test.mjs
 ```
 
-Open the server in a browser. To deploy, upload the contents of `app/` to any static website host (including a subdirectory). No build is needed. A public deployment has not been created by this change.
+Open the server in a browser. To deploy, upload the contents of `app/` to any static website host (including a subdirectory). No build is needed. GitHub Pages publishes this repository from `main / (root)`. The root `index.html` loads the application assets from `app/`. The public address is https://patrickjendritza.com/number-lab/ . No custom Actions workflow is needed. When changing the page shell in `app/index.html`, also update root `index.html`, keeping its asset paths prefixed with `app/`.
 
 Profiles persist in localStorage on the same browser and origin; private browsing or clearing site data can remove them. Up to eight profiles are supported. Stars reward completed rounds, not speed or independent accuracy. Unfinished rounds restart, but completed answers already contribute evidence. UI is English in this first version.
 
