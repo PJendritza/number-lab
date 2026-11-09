@@ -16,3 +16,9 @@ Open the server in a browser. To deploy, upload the contents of `app/` to any st
 Profiles persist in localStorage on the same browser and origin; private browsing or clearing site data can remove them. Up to eight profiles are supported. Stars reward completed rounds, not speed or independent accuracy. Unfinished rounds restart, but completed answers already contribute evidence. UI is English in this first version.
 
 See [the plan and learning design](docs/PLAN.md) for scope, adaptive rules, rationale, and limitations.
+
+## Touch-first activities
+
+**1 · Tap** matches a large target to a row of digits 1–9, 0. **2 · Write** checks finger-drawn digits. Addition and subtraction offer large answer choices and an optional writing mode. No exercise opens the phone keyboard. Profile names are optional; choosing an activity creates a local player automatically.
+
+See [handwriting implementation and limitations](docs/HANDWRITING.md). The bundled recognizer runs locally; no installation or training is needed to use it.

@@ -15,3 +15,7 @@ The ten-answer thresholds are a transparent prototype heuristic. They are not a 
 ## Later iterations
 
 Observe children using the prototype; refine number-bond and crossing-ten stages; add manipulatives and audio directions if needed. Consider German localisation, local backup/restore, exact unfinished-round resumption, and optional mixed review. Multiplication and division should use groups/sharing models in a separate learning design. They are intentionally unavailable in this version.
+
+## Updated touch-first version
+
+The initial numeric-text input has been replaced. Child screens now show only the task, large tap targets or drawing pads, visual feedback, and next/home controls. The first number activity matches a target numeral against a digit row; the second copies it by finger. Completing the tapping round offers the writing activity. Arithmetic offers four choices or a handwriting mode. Marketing text, subheadings, and decorative explanations have been removed from child screens. Local profiles and adaptive arithmetic remain. Counting helpers from the initial UI are not present in this revision; numeral recognition/writing is the entry point. See HANDWRITING.md for the actual model and limitations.
