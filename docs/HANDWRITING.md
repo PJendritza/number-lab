@@ -2,9 +2,9 @@
 
 The app bundles a 784 → 80 ReLU → 10 softmax digit classifier (~1.2 MB JSON), trained for this project with scikit-learn's MLPClassifier on MNIST. Inference is ordinary JavaScript: no runtime package, third-party API, or upload. Training is separate from running the website.
 
-MNIST authors: Yann LeCun, Corinna Cortes, Christopher J. C. Burges. Source: http://yann.lecun.com/exdb/mnist/ ; dataset files retrieved over verified HTTPS from the documented https://github.com/fgnt/mnist mirror. The fixture contains 30 held-out MNIST examples, three per digit. Training used 60,000 examples (with an internal validation split); the test set has 10,000. The model achieved 97.81% on the MNIST test set before export. That does **not** establish accuracy on children's finger writing. The 35-iteration training budget ended before convergence; no claim of optimal training is made.
+MNIST authors: Yann LeCun, Corinna Cortes, Christopher J. C. Burges. Source: http://yann.lecun.com/exdb/mnist/ ; dataset files retrieved over verified HTTPS from the documented https://github.com/fgnt/mnist mirror. The fixture contains 29 held-out MNIST examples covering all ten digits. Training used 60,000 examples (with an internal validation split); the test set has 10,000. The model achieved 97.81% on the MNIST test set before export. That does **not** establish accuracy on children's finger writing. The 35-iteration training budget ended before convergence; no claim of optimal training is made.
 
-Canvas preprocessing crops the ink bounding box, fits the digit into 20×20 pixels inside a 28×28 image, and centers its mass. The model predicts without receiving the target answer. Predictions below 55% confidence display `?`; confident predictions appear below the pad. Blank pads cannot be submitted. Wrong/uncertain drawings stay available until erased with ↻. Recognition retries do not lower arithmetic difficulty; this also means assisted corrections can overstate independence, so handwriting-mode progress is practice evidence, not an assessment.
+Canvas preprocessing crops the ink bounding box, fits the digit into 20×20 pixels inside a 28×28 image, and centers its mass. The model and acceptance gate operate without receiving the target answer. Acceptance uses the multi-part gate documented below; rejected ink wiggles in its pad. Accepted ink flies to the equation. Blank pads cannot be submitted. Wrong/uncertain drawings stay available until erased with ↻. Recognition retries do not lower arithmetic difficulty; this also means assisted corrections can overstate independence, so handwriting-mode progress is practice evidence, not an assessment.
 
 Single digits have a full-width square pad. Two-digit arithmetic uses separate tens/ones pads, stacked on narrow screens. Pointer events support fingers, styluses, and a mouse. Browser zoom remains available outside the drawing area; touch-action is disabled only on canvases. Progress survives reload; drawings do not.
 
@@ -28,3 +28,16 @@ The current UI has no submit button. Checking starts after a one-second pause fo
 Confident recognition first animates a snapshot of each actual drawn digit from its pad to the equation's answer box (850 ms). During the flight the ink cross-fades into the recognized typed digit. Correctness is handled only after landing: a correct answer celebrates and advances, an incorrect answer remains in the equation and wiggles. The original ink stays available to edit or clear after an incorrect result. Low-confidence recognition shows a question mark rather than presenting a digit as certain. There are no small recognition labels below pads.
 
 Clear is a wide, flat eraser button. It cancels a pending recognition or active flight and empties all pads and the answer box. Leaving the activity also cancels/removes flight overlays. Reduced-motion mode uses a brief stationary fade instead of travel.
+
+### Rejecting unclear/non-digit ink
+
+A softmax winner is not proof that ink is a number: random noise can produce a 99% score. The current acceptance gate is deliberately separate from choosing a digit. It requires all of:
+
+- Normalized ink mass between 12 and 240 pixels (out of 784).
+- Winner confidence at least 0.92 and a margin of at least 0.85 over the second guess.
+- The same digit in at least three of four one-pixel translations.
+- Mean squared pixel distance no greater than 0.08 from one of 80 real training examples of that digit. The 800 reference shapes are quantized to four-bit pixels and bundled locally, generated reproducibly by the training script. No expected answer is provided to this decision.
+
+These are prototype acceptance thresholds, not calibrated probabilities of correctness. They reject common scribbles/noise and can also reject unusual but valid writing; they do not guarantee every scribble is rejected. Automated tests cover clear digits, high-confidence noise, sparse noise, a real pointer-drawn zero, a dense scribble, and a tiny mark. The original held-out fixture has 29 examples (two examples for 8, three for each other digit).
+
+Rejected ink stays in place and its entire pad wiggles. No detected digit flies, no answer is filled, no math progress changes, and there is no automatic retry loop. The child can clear and redraw. Blank pads simply wait; tiny nonblank marks wiggle rather than being silently ignored. Clearing resets rejection feedback. Existing flight/celebration behavior remains for accepted digits, including a recognized but mathematically incorrect answer.

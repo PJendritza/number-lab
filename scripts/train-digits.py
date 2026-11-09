@@ -28,3 +28,14 @@ model.fit(images('train-images-idx3-ubyte.gz'),labels('train-labels-idx1-ubyte.g
 print('Held-out MNIST accuracy:',model.score(images('t10k-images-idx3-ubyte.gz'),labels('t10k-labels-idx1-ubyte.gz')))
 root=Path(__file__).resolve().parents[1]
 (root/'app/models/digits.json').write_text(json.dumps({'weights':[w.T.round(6).tolist() for w in model.coefs_],'biases':[b.round(6).tolist() for b in model.intercepts_]},separators=(',',':')))
+
+# Independent, target-blind shape reference set for rejecting out-of-domain ink.
+# Select only training samples; test fixtures are never used as references.
+raw=np.frombuffer(gzip.decompress((args.data/'train-images-idx3-ubyte.gz').read_bytes()),dtype=np.uint8,offset=16).reshape(-1,784)
+training_labels=labels('train-labels-idx1-ubyte.gz')
+rng=np.random.default_rng(71)
+shapes=[]
+for digit in range(10):
+ rows=raw[rng.choice(np.where(training_labels==digit)[0],80,replace=False)]
+ shapes.append([''.join(format(int(v),'x') for v in np.round(row/17).astype('uint8')) for row in rows])
+(root/'app/models/digit-shapes.json').write_text(json.dumps(shapes,separators=(',',':')))
