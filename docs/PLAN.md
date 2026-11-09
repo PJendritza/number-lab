@@ -19,3 +19,9 @@ Observe children using the prototype; refine number-bond and crossing-ten stages
 ## Updated touch-first version
 
 The initial numeric-text input has been replaced. Child screens now show only the task, large tap targets or drawing pads, visual feedback, and next/home controls. The first number activity matches a target numeral against a digit row; the second copies it by finger. Completing the tapping round offers the writing activity. Arithmetic offers four choices or a handwriting mode. Marketing text, subheadings, and decorative explanations have been removed from child screens. Local profiles and adaptive arithmetic remain. Counting helpers from the initial UI are not present in this revision; numeral recognition/writing is the entry point. See HANDWRITING.md for the actual model and limitations.
+
+## Addition-only flow revision
+
+The menu now has exactly two activities: addition with answer buttons, and addition with handwriting. Standalone numeral matching/copying and the subtraction menu have been removed; saved subtraction history remains intact. Every correct answer shows a large check with a burst of stars, locks the current controls, and automatically advances after 1.4 seconds. Every five answers awards a star and continues straight into the next round. There is no next-arrow step or end-of-round interruption. Back/erase touch targets are at least 68–72 pixels.
+
+Handwriting checks automatically one second after pointer release; starting another stroke cancels the pending check. It never checks while the finger is down. Blank/incomplete two-box answers wait. Wrong or unclear ink remains for correction or erasing. Home/settings cancels recognition and advance timers so delayed callbacks cannot navigate away from the new screen.

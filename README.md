@@ -22,3 +22,5 @@ See [the plan and learning design](docs/PLAN.md) for scope, adaptive rules, rati
 **1 · Tap** matches a large target to a row of digits 1–9, 0. **2 · Write** checks finger-drawn digits. Addition and subtraction offer large answer choices and an optional writing mode. No exercise opens the phone keyboard. Profile names are optional; choosing an activity creates a local player automatically.
 
 See [handwriting implementation and limitations](docs/HANDWRITING.md). The bundled recognizer runs locally; no installation or training is needed to use it.
+
+The current menu has two **addition** exercises: choose an answer or write it. Both celebrate and advance automatically. Handwriting checks after a one-second pause following finger lift; no submit button is required. Every five answers earns a star and continues practice. The earlier numeral-only and subtraction menu entries are no longer shown.

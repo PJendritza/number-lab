@@ -18,3 +18,7 @@ node --test tests/*.test.mjs
 ```
 
 The script verifies SHA-256 checksums before training and exports local model weights. Exact floating-point results may vary by numerical library version. `tests/browser.cjs` draws a zero through actual pointer events, submits it, checks feedback, and exercises tapping, persistence, arithmetic, and mobile layout.
+
+### Automatic checking
+
+The current UI has no submit button. Checking starts after a one-second pause following pointer release. Additional strokes restart the pause; pointer-down cancels it. Blank pads and partially completed two-digit answers cannot pass. Correct recognition triggers the shared 1.4-second celebration and automatic advance. Recognition and navigation timers are cancelled on leaving the task. Browser regression checks cover the pause, holding the pointer down, blank pads, automatic advancement, and leaving with a pending check.
