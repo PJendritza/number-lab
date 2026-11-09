@@ -22,3 +22,9 @@ The script verifies SHA-256 checksums before training and exports local model we
 ### Automatic checking
 
 The current UI has no submit button. Checking starts after a one-second pause following pointer release. Additional strokes restart the pause; pointer-down cancels it. Blank pads and partially completed two-digit answers cannot pass. Correct recognition triggers the shared 1.4-second celebration and automatic advance. Recognition and navigation timers are cancelled on leaving the task. Browser regression checks cover the pause, holding the pointer down, blank pads, automatic advancement, and leaving with a pending check.
+
+### Ink arrival feedback
+
+Confident recognition first animates a snapshot of each actual drawn digit from its pad to the equation's answer box (850 ms). During the flight the ink cross-fades into the recognized typed digit. Correctness is handled only after landing: a correct answer celebrates and advances, an incorrect answer remains in the equation and wiggles. The original ink stays available to edit or clear after an incorrect result. Low-confidence recognition shows a question mark rather than presenting a digit as certain. There are no small recognition labels below pads.
+
+Clear is a wide, flat eraser button. It cancels a pending recognition or active flight and empties all pads and the answer box. Leaving the activity also cancels/removes flight overlays. Reduced-motion mode uses a brief stationary fade instead of travel.
