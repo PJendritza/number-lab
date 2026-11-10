@@ -7,7 +7,7 @@ No installation or build is required. Python 3 serves the application; Node 18+ 
 ```sh
 cd /workspace/number-lab
 node --test tests/*.test.mjs
-python3 -m http.server 8070 --directory app
+python3 -m http.server 8070 --directory .
 ```
 
 Keep the server in a persistent terminal session. In another session, verify `curl -fsS http://127.0.0.1:8070/` returns the Number Lab HTML. Services must restart in new tasks; live processes do not survive snapshots.

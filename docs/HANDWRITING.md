@@ -1,48 +1,58 @@
-# Digit recognition
+# Handwriting recognition
 
-The app bundles a 784 → 80 ReLU → 10 softmax digit classifier (~1.2 MB JSON), trained for this project with scikit-learn's MLPClassifier on MNIST. Inference is ordinary JavaScript: no runtime package, third-party API, or upload. Training is separate from running the website.
+The browser bundles a 784 → 128 ReLU → 10 softmax classifier (~1.9 MB JSON) and 960 four-bit reference shapes (~0.76 MB). Inference and segmentation are ordinary JavaScript. No drawing is uploaded, no API is called, and no training is needed to use the site.
 
-MNIST authors: Yann LeCun, Corinna Cortes, Christopher J. C. Burges. Source: http://yann.lecun.com/exdb/mnist/ ; dataset files retrieved over verified HTTPS from the documented https://github.com/fgnt/mnist mirror. The fixture contains 29 held-out MNIST examples covering all ten digits. Training used 60,000 examples (with an internal validation split); the test set has 10,000. The model achieved 97.81% on the MNIST test set before export. That does **not** establish accuracy on children's finger writing. The 35-iteration training budget ended before convergence; no claim of optimal training is made.
+## German-style numerals
 
-Canvas preprocessing crops the ink bounding box, fits the digit into 20×20 pixels inside a 28×28 image, and centers its mass. The model and acceptance gate operate without receiving the target answer. Acceptance uses the multi-part gate documented below; rejected ink wiggles in its pad. Accepted ink flies to the equation. Blank pads cannot be submitted. Wrong/uncertain drawings stay available until erased with ↻. Recognition retries do not lower arithmetic difficulty; this also means assisted corrections can overstate independence, so handwriting-mode progress is practice evidence, not an assessment.
+Training combines the 60,000 MNIST training examples with 5,000 generated examples of European-style 1s and crossed/plain 7s. The generated 1s have a leading upstroke, varied stem tilt, and optional bottom foot. Width, proportions, stroke thickness, and small coordinate variations are randomized. The rejection reference set includes these forms, not only MNIST examples. Plain 1 and uncrossed 7 remain supported.
 
-Single digits have a full-width square pad. Two-digit arithmetic uses separate tens/ones pads, stacked on narrow screens. Pointer events support fingers, styluses, and a mouse. Browser zoom remains available outside the drawing area; touch-action is disabled only on canvases. Progress survives reload; drawings do not.
+The generator is `scripts/european-digits.py`. These are constructed examples, **not handwriting collected from German children**. Tests reproduce the original leading-stroke 1 that the old model guessed as 7. Additional handcrafted browser examples cover plain/footed 1, crossed/plain 7, wide/narrow zeros, and small writing near the side.
 
-## Rebuild (optional)
+Training uses an internal validation split. The final model scored 97.86% on the separate 10,000-image MNIST test set and 100% classification on 600 generated style examples from a separate seed. The latter does not establish accuracy on real German handwriting. Training stopped at the 50-iteration budget before convergence. The old model's MNIST score was 97.81%.
 
-Use a separate Python environment with numpy 2.3.5 and scikit-learn 1.8.0 (or record your versions and revalidate). Download the four `*-ubyte.gz` files linked in the mirror README into a data directory, then run:
+MNIST authors: Yann LeCun, Corinna Cortes, Christopher J. C. Burges. Source: http://yann.lecun.com/exdb/mnist/ ; gzip inputs retrieved over verified HTTPS from the documented https://github.com/fgnt/mnist mirror. The bundled held-out fixture contains 29 original examples across all ten digits.
+
+## One writing box
+
+Single- and two-digit answers use the same large canvas. The recognizer receives no expected answer or expected digit count. It projects visible ink onto columns to find spaces, keeps each digit's multiple strokes together, and reads accepted segments left to right. Both parts of a candidate pair must contain sufficiently tall ink. A pair that cannot be read is rejected rather than silently converted into a single digit. Very narrow bridges may be split if the whole drawing is wide enough and both resulting digits pass acceptance.
+
+This is segmentation, not a general sequence OCR model. Heavily overlapping/touching digits, detached components, or three-digit answers may need clearing/redrawing; only one or two digits are supported. Tests cover 10, 11, 12, 17, and 20, close spacing, small side-positioned 17, and rejecting a three-digit example. Each digit is cropped, scaled proportionally into 20×20 inside a 28×28 image, and centered by ink mass before classification.
+
+Recognition starts after a 1.5-second pause following pointer release. New strokes cancel the pending check. During the 850 ms ink flight, new strokes also cancel that flight and restart recognition, allowing time to finish the number. There is no perfect way to distinguish a long pause from a finished answer without a submit control. Blank pads simply wait; tiny nonblank marks wiggle. Pointer events support fingers, styluses, and mice, with browser zoom available outside the canvas.
+
+## Rejection and feedback
+
+A softmax classifier can be confident about noise. Acceptance is separate and target-independent:
+
+- Normalized ink mass: 12–240 pixels out of 784.
+- Winner confidence ≥ 0.80 and margin over runner-up ≥ 0.60.
+- Same prediction under at least two of four one-pixel translations.
+- Mean squared pixel distance ≤ 0.10 from a reference shape of that digit.
+
+These prototype thresholds are not calibrated probabilities or validated mastery measures. They can reject unusual valid handwriting or accept some scribbles. Tests cover dense scribbles, sparse noise, high-confidence noise, and tiny marks. Rejected ink stays in place and the pad wiggles; no digit is filled and no math progress changes.
+
+Accepted ink flies as a whole answer to the equation and cross-fades into the recognized number. Only after landing is it compared with the arithmetic answer. Correct answers celebrate and advance; incorrect answers wiggle. Clear cancels recognition/flight and empties the box. Leaving the activity cancels all pending callbacks and overlays. Reduced-motion mode uses a brief stationary fade.
+
+Recognition retries do not lower arithmetic difficulty. This can overstate independent success, so handwriting-mode progress is practice evidence, not an assessment. Profiles persist locally; unfinished drawings do not.
+
+## Rebuild and checks
+
+Training requires Python with numpy 2.3.5, scikit-learn 1.8.0, and Pillow 13.0.0. Download the four MNIST `*-ubyte.gz` files listed in the mirror README into a directory:
 
 ```sh
 OPENBLAS_NUM_THREADS=2 OMP_NUM_THREADS=2 python3 scripts/train-digits.py /path/to/mnist-data
 node --test tests/*.test.mjs
 ```
 
-The script verifies SHA-256 checksums before training and exports local model weights. Exact floating-point results may vary by numerical library version. `tests/browser.cjs` draws a zero through actual pointer events, submits it, checks feedback, and exercises tapping, persistence, arithmetic, and mobile layout.
+The script verifies SHA-256 inputs, trains with deterministic seeds, and exports weights and references. Numerical libraries may affect exact results. Browser checks require Playwright and Chromium; serve the repository root first:
 
-### Automatic checking
+```sh
+python3 -m http.server 8070 --directory .
+# In another terminal:
+node tests/browser.cjs
+node tests/handwriting-shapes.cjs
+node tests/handwriting-numbers.cjs
+node tests/handwriting-flow.cjs
+```
 
-The current UI has no submit button. Checking starts after a one-second pause following pointer release. Additional strokes restart the pause; pointer-down cancels it. Blank pads and partially completed two-digit answers cannot pass. Correct recognition triggers the shared 1.4-second celebration and automatic advance. Recognition and navigation timers are cancelled on leaving the task. Browser regression checks cover the pause, holding the pointer down, blank pads, automatic advancement, and leaving with a pending check.
-
-### Ink arrival feedback
-
-Confident recognition first animates a snapshot of each actual drawn digit from its pad to the equation's answer box (850 ms). During the flight the ink cross-fades into the recognized typed digit. Correctness is handled only after landing: a correct answer celebrates and advances, an incorrect answer remains in the equation and wiggles. The original ink stays available to edit or clear after an incorrect result. Low-confidence recognition shows a question mark rather than presenting a digit as certain. There are no small recognition labels below pads.
-
-Clear is a wide, flat eraser button. It cancels a pending recognition or active flight and empties all pads and the answer box. Leaving the activity also cancels/removes flight overlays. Reduced-motion mode uses a brief stationary fade instead of travel.
-
-### Rejecting unclear/non-digit ink
-
-A softmax winner is not proof that ink is a number: random noise can produce a 99% score. The current acceptance gate is deliberately separate from choosing a digit. It requires all of:
-
-- Normalized ink mass between 12 and 240 pixels (out of 784).
-- Winner confidence at least 0.80 and a margin of at least 0.60 over the second guess.
-- The same digit in at least two of four one-pixel translations.
-- Mean squared pixel distance no greater than 0.10 from one of 80 real training examples of that digit. The 800 reference shapes are quantized to four-bit pixels and bundled locally, generated reproducibly by the training script. No expected answer is provided to this decision.
-
-These are prototype acceptance thresholds, not calibrated probabilities of correctness. They reject common scribbles/noise and can also reject unusual but valid writing; they do not guarantee every scribble is rejected. Automated tests cover clear digits, high-confidence noise, sparse noise, a real pointer-drawn zero, a dense scribble, and a tiny mark. The original held-out fixture has 29 examples (two examples for 8, three for each other digit).
-
-Rejected ink stays in place and its entire pad wiggles. No detected digit flies, no answer is filled, no math progress changes, and there is no automatic retry loop. The child can clear and redraw. Blank pads simply wait; tiny nonblank marks wiggle rather than being silently ignored. Clearing resets rejection feedback. Existing flight/celebration behavior remains for accepted digits, including a recognized but mathematically incorrect answer.
-
-
-### More forgiving finger-writing thresholds
-
-The initial gate caused false rejections. Confidence/margin, shift stability, and shape distance have been relaxed to the values above. Ink-mass rejection, tiny-mark handling, and target-independent classification remain. Regression checks include previously rejected handwritten 3/6/8 examples as well as small/off-center, wide, and narrow drawn zeros. These are engineering examples, not a validation study with children.
+Set `BASE_URL` to test a different local port. The flow test writes a German 1 and then 2 through pointer events in one canvas, verifies the number 12 flies as one answer, and checks celebration and automatic advancement. The other checks cover scribble rejection, erase, pending timer cancellation, and the existing tap flow.

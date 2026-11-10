@@ -1,4 +1,5 @@
 """Rebuild the bundled digit classifier. See docs/HANDWRITING.md for inputs."""
+import importlib.util
 import argparse
 import gzip
 import hashlib
@@ -23,8 +24,13 @@ def images(name):
  return np.frombuffer(gzip.decompress((args.data/name).read_bytes()),dtype=np.uint8,offset=16).reshape(-1,784).astype('float32')/255
 def labels(name):
  return np.frombuffer(gzip.decompress((args.data/name).read_bytes()),dtype=np.uint8,offset=8)
-model = MLPClassifier(hidden_layer_sizes=(80,),max_iter=35,random_state=42,early_stopping=True)
-model.fit(images('train-images-idx3-ubyte.gz'),labels('train-labels-idx1-ubyte.gz'))
+model = MLPClassifier(hidden_layer_sizes=(128,),max_iter=50,random_state=42,early_stopping=True)
+spec=importlib.util.spec_from_file_location('european_digits',Path(__file__).with_name('european-digits.py'))
+styles=importlib.util.module_from_spec(spec);spec.loader.exec_module(styles)
+extra_x,extra_y=styles.samples(2500,812)
+model.fit(np.concatenate([images('train-images-idx3-ubyte.gz'),extra_x]),np.concatenate([labels('train-labels-idx1-ubyte.gz'),extra_y]))
+held_x,held_y=styles.samples(300,914)
+print('Held-out synthetic European-style accuracy:',model.score(held_x,held_y))
 print('Held-out MNIST accuracy:',model.score(images('t10k-images-idx3-ubyte.gz'),labels('t10k-labels-idx1-ubyte.gz')))
 root=Path(__file__).resolve().parents[1]
 (root/'app/models/digits.json').write_text(json.dumps({'weights':[w.T.round(6).tolist() for w in model.coefs_],'biases':[b.round(6).tolist() for b in model.intercepts_]},separators=(',',':')))
@@ -37,5 +43,8 @@ rng=np.random.default_rng(71)
 shapes=[]
 for digit in range(10):
  rows=raw[rng.choice(np.where(training_labels==digit)[0],80,replace=False)]
+ if digit in (1,7):
+  augmented=np.round(extra_x[extra_y==digit][:80]*255).astype('uint8')
+  rows=np.concatenate([rows,augmented])
  shapes.append([''.join(format(int(v),'x') for v in np.round(row/17).astype('uint8')) for row in rows])
 (root/'app/models/digit-shapes.json').write_text(json.dumps(shapes,separators=(',',':')))

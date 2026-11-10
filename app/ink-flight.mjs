@@ -8,7 +8,7 @@ export function flyInk(canvases,digits,target){
   const flight=document.createElement('div');flight.className='ink-flight';flight.setAttribute('aria-hidden','true');
   Object.assign(flight.style,{left:`${source.left}px`,top:`${source.top}px`,width:`${source.width}px`,height:`${source.height}px`});
   const ink=document.createElement('canvas');ink.width=canvas.width;ink.height=canvas.height;ink.getContext('2d').drawImage(canvas,0,0);
-  const number=document.createElement('span');number.textContent=digits[i];number.style.fontSize=`${source.height*.72}px`;
+  const number=document.createElement('span');number.textContent=digits[i];number.style.fontSize=`${Math.min(source.height*.72,source.width/(String(digits[i]).length*.7))}px`;
   flight.append(ink,number);document.body.append(flight);elements.push(flight);
   const duration=reduced?120:850,options={duration,easing:'cubic-bezier(.22,.7,.25,1)',fill:'forwards'};
   animations.push(flight.animate(reduced?[{opacity:0},{opacity:0}]:[{transform:'translate(0,0) scale(1)'},{transform:`translate(${destination.left+i*width-source.left}px,${destination.top-source.top}px) scale(${width/source.width},${destination.height/source.height})`}],options));

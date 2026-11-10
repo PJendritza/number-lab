@@ -5,7 +5,7 @@ const assert=require('node:assert/strict');
  const browser=await chromium.launch({executablePath:'/usr/bin/chromium',args:['--no-sandbox']});
  try {
   const page=await browser.newPage();
-  await page.goto(process.env.BASE_URL||'http://127.0.0.1:8072/');
+  await page.goto(process.env.BASE_URL||'http://127.0.0.1:8070/');
   const results=await page.evaluate(async()=>{
    const {loadModel,pixelsFromCanvas,assessDigit}=await import('./app/recognition.mjs');
    const model=await loadModel();
