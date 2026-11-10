@@ -34,10 +34,15 @@ Clear is a wide, flat eraser button. It cancels a pending recognition or active 
 A softmax winner is not proof that ink is a number: random noise can produce a 99% score. The current acceptance gate is deliberately separate from choosing a digit. It requires all of:
 
 - Normalized ink mass between 12 and 240 pixels (out of 784).
-- Winner confidence at least 0.92 and a margin of at least 0.85 over the second guess.
-- The same digit in at least three of four one-pixel translations.
-- Mean squared pixel distance no greater than 0.08 from one of 80 real training examples of that digit. The 800 reference shapes are quantized to four-bit pixels and bundled locally, generated reproducibly by the training script. No expected answer is provided to this decision.
+- Winner confidence at least 0.80 and a margin of at least 0.60 over the second guess.
+- The same digit in at least two of four one-pixel translations.
+- Mean squared pixel distance no greater than 0.10 from one of 80 real training examples of that digit. The 800 reference shapes are quantized to four-bit pixels and bundled locally, generated reproducibly by the training script. No expected answer is provided to this decision.
 
 These are prototype acceptance thresholds, not calibrated probabilities of correctness. They reject common scribbles/noise and can also reject unusual but valid writing; they do not guarantee every scribble is rejected. Automated tests cover clear digits, high-confidence noise, sparse noise, a real pointer-drawn zero, a dense scribble, and a tiny mark. The original held-out fixture has 29 examples (two examples for 8, three for each other digit).
 
 Rejected ink stays in place and its entire pad wiggles. No detected digit flies, no answer is filled, no math progress changes, and there is no automatic retry loop. The child can clear and redraw. Blank pads simply wait; tiny nonblank marks wiggle rather than being silently ignored. Clearing resets rejection feedback. Existing flight/celebration behavior remains for accepted digits, including a recognized but mathematically incorrect answer.
+
+
+### More forgiving finger-writing thresholds
+
+The initial gate caused false rejections. Confidence/margin, shift stability, and shape distance have been relaxed to the values above. Ink-mass rejection, tiny-mark handling, and target-independent classification remain. Regression checks include previously rejected handwritten 3/6/8 examples as well as small/off-center, wide, and narrow drawn zeros. These are engineering examples, not a validation study with children.

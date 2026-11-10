@@ -13,14 +13,15 @@ export function attachPad(canvas,onInk,onEnd=()=>{}){const ctx=canvas.getContext
  return ()=>{ctx.clearRect(0,0,canvas.width,canvas.height);onInk();};}
 
 // A closed-set classifier always has a winner, even for noise. Accept only
-// strong, stable predictions which also resemble actual handwritten examples.
+// reasonably clear predictions which also resemble handwritten examples.
+// Leave room for children’s proportions and less steady finger strokes.
 export function assessDigit(pixels,model){
  const result=predict(pixels,model);let mass=0;for(const value of pixels)mass+=value;
  if(mass<12||mass>240)return {...result,accepted:false,reason:'ink'};
- if(result.confidence<.92||result.margin<.85)return {...result,accepted:false,reason:'uncertain'};
+ if(result.confidence<.80||result.margin<.60)return {...result,accepted:false,reason:'uncertain'};
  let stable=0;for(const [dx,dy] of [[-1,0],[1,0],[0,-1],[0,1]]){const shifted=Array(784).fill(0);for(let y=1;y<27;y++)for(let x=1;x<27;x++)shifted[(y+dy)*28+x+dx]=pixels[y*28+x];if(predict(shifted,model).digit===result.digit)stable++;}
- if(stable<3)return {...result,accepted:false,reason:'unstable'};
+ if(stable<2)return {...result,accepted:false,reason:'unstable'};
  let distance=Infinity;for(const template of model.shapes[result.digit]){let squared=0;for(let i=0;i<784;i++){const d=pixels[i]-template[i];squared+=d*d;}distance=Math.min(distance,squared/784);}
- return {...result,distance,accepted:distance<=.08,reason:distance<=.08?'digit':'shape'};
+ return {...result,distance,accepted:distance<=.10,reason:distance<=.10?'digit':'shape'};
 }
 export function hasInk(canvas){const data=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;return data.some((v,i)=>i%4===3&&v>50);}
