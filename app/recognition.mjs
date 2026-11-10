@@ -18,10 +18,38 @@ export function attachPad(canvas,onInk,onEnd=()=>{}){const ctx=canvas.getContext
 export function assessDigit(pixels,model){
  const result=predict(pixels,model);let mass=0;for(const value of pixels)mass+=value;
  if(mass<12||mass>240)return {...result,accepted:false,reason:'ink'};
+ // German convention: a 7 must have an actual middle crossbar. A high
+ // classifier score never overrides this requirement.
+ if(result.digit===7&&!hasMiddleCrossbar(pixels)){
+  const distance=shapeDistance(pixels,model.shapes[1]);
+  if(hasGermanOneStem(pixels)&&distance<=.085)return {digit:1,confidence:null,modelDigit:7,modelConfidence:result.confidence,distance,accepted:true,reason:'german-one-shape'};
+  return {...result,accepted:false,reason:'missing-seven-crossbar'};
+ }
  if(result.confidence<.80||result.margin<.60)return {...result,accepted:false,reason:'uncertain'};
  let stable=0;for(const [dx,dy] of [[-1,0],[1,0],[0,-1],[0,1]]){const shifted=Array(784).fill(0);for(let y=1;y<27;y++)for(let x=1;x<27;x++)shifted[(y+dy)*28+x+dx]=pixels[y*28+x];if(predict(shifted,model).digit===result.digit)stable++;}
  if(stable<2)return {...result,accepted:false,reason:'unstable'};
- let distance=Infinity;for(const template of model.shapes[result.digit]){let squared=0;for(let i=0;i<784;i++){const d=pixels[i]-template[i];squared+=d*d;}distance=Math.min(distance,squared/784);}
+ const distance=shapeDistance(pixels,model.shapes[result.digit]);
  return {...result,distance,accepted:distance<=.10,reason:distance<=.10?'digit':'shape'};
+}
+function shapeDistance(pixels,templates){let best=Infinity;for(const template of templates){let squared=0;for(let i=0;i<784;i++)squared+=(pixels[i]-template[i])**2;best=Math.min(best,squared/784);}return best;}
+function inkBounds(pixels){let left=28,right=-1,top=28,bottom=-1;for(let y=0;y<28;y++)for(let x=0;x<28;x++)if(pixels[y*28+x]>.22){left=Math.min(left,x);right=Math.max(right,x);top=Math.min(top,y);bottom=Math.max(bottom,y);}return {left,right,top,bottom,width:right-left+1,height:bottom-top+1};}
+export function hasMiddleCrossbar(pixels){
+ const b=inkBounds(pixels);if(b.height<10)return false;
+ const required=Math.max(4,Math.ceil(b.width*.30),Math.ceil(b.height*.22));
+ // Look for a continuous near-horizontal run in the middle, not the top
+ // stroke of a 7 or the sloping leading stroke of a German 1.
+ for(let y=Math.ceil(b.top+b.height*.34);y<=b.top+b.height*.70;y++)for(const slope of [-.22,-.11,0,.11,.22]){
+  let run=0;for(let x=b.left;x<=b.right;x++){const yy=Math.round(y+slope*(x-(b.left+b.right)/2));const ink=yy>=0&&yy<28&&pixels[yy*28+x]>.22;run=ink?run+1:0;if(run>=required)return true;}
+ }
+ return false;
+}
+export function hasGermanOneStem(pixels){
+ const b=inkBounds(pixels);if(b.height<10)return false;
+ const centers=[];for(let y=Math.ceil(b.top+b.height*.45);y<=b.top+b.height*.82;y++){let sum=0,weight=0;for(let x=b.left;x<=b.right;x++){const v=pixels[y*28+x];if(v>.22){sum+=x*v;weight+=v;}}if(weight)centers.push(sum/weight);}
+ if(centers.length<5)return false;
+ const middle=centers.reduce((a,v)=>a+v,0)/centers.length;
+ if(Math.max(...centers)-Math.min(...centers)>b.height*.16)return false;
+ let leading=false;for(let y=Math.ceil(b.top+b.height*.12);y<b.top+b.height*.43;y++)for(let x=b.left;x<middle-b.height*.13;x++)if(pixels[y*28+x]>.22)leading=true;
+ return leading;
 }
 export function hasInk(canvas){const data=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;return data.some((v,i)=>i%4===3&&v>50);}

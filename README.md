@@ -15,7 +15,7 @@ Open the server in a browser. GitHub Pages publishes `main / (root)` at https://
 
 ## Handwriting
 
-A single box accepts one- or two-digit answers. A local neural network, augmented with generated German-style 1s and crossed 7s, recognizes digits independently of the expected answer. Ink is checked after a pause; additional strokes cancel pending recognition/flight. Clear erases the answer. Some handwriting, particularly overlapping digits, may need a retry.
+A single box accepts one- or two-digit answers. A local neural network, augmented with generated German-style 1s and crossed 7s, recognizes digits independently of the expected answer. Ink is checked after a pause; additional strokes cancel pending recognition/flight. A 7 needs a middle crossbar (German convention). Ambiguous uncrossed shapes are checked as possible German 1s or rejected. Clear erases the answer. Some handwriting, particularly overlapping digits, may need a retry.
 
 See [recognition, training, evidence and limitations](docs/HANDWRITING.md). No model installation or training is needed to run the site. Optional browser checks use Playwright and `/usr/bin/chromium`:
 
@@ -24,6 +24,7 @@ node tests/browser.cjs
 node tests/handwriting-shapes.cjs
 node tests/handwriting-numbers.cjs
 node tests/handwriting-flow.cjs
+node tests/german-seven.cjs
 ```
 
 Use `BASE_URL` for a different server address. Screenshots go to ignored `artifacts/`.

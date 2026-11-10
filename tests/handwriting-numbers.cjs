@@ -14,12 +14,12 @@ const assert=require('node:assert/strict');
   }
   const cases=[['1','german'],['1','plain'],['1','foot'],['7','german'],['7','plain'],['10','german'],['11','german'],['12','german'],['17','german'],['20','german'],['20','close'],['17','small-side']];
   const results=cases.map(([text,style])=>{const canvas=document.createElement('canvas');canvas.width=480;canvas.height=400;const ctx=canvas.getContext('2d');ctx.lineWidth=16;ctx.lineCap='round';ctx.lineJoin='round';
-   [...text].forEach((n,i)=>{ctx.save();if(style==='small-side'){ctx.translate(200+i*100,140);ctx.scale(.32,.48);}else if(text.length===2){ctx.translate(15+i*(style==='close'?110:220),55);ctx.scale(.68,.85);}else ctx.translate(70,35);digit(ctx,n,style);ctx.restore();});return {expected:text,style,...readNumber(canvas,model)};});
+   [...text].forEach((n,i)=>{ctx.save();if(style==='small-side'){ctx.translate(200+i*100,140);ctx.scale(.32,.48);}else if(text.length===2){ctx.translate(15+i*(style==='close'?110:220),55);ctx.scale(.68,.85);}else ctx.translate(70,35);digit(ctx,n,style);ctx.restore();});return {expected:text==='7'&&style==='plain'?null:text,style,...readNumber(canvas,model)};});
   // Three written digits must not quietly become one or two.
   const c=document.createElement('canvas');c.width=480;c.height=400;const ctx=c.getContext('2d');ctx.lineWidth=14;for(let i=0;i<3;i++){ctx.save();ctx.translate(i*145,50);ctx.scale(.5,.8);digit(ctx,'1');ctx.restore();}results.push({expected:null,...readNumber(c,model)});
   return results;
  });
 
  for(const r of results){if(r.expected===null)assert(!r.accepted);else{assert.equal(r.accepted,true,`${r.expected} (${r.style}): ${r.reason}`);assert.equal(r.text,r.expected);}}
- console.log('PASS: German/plain/footed 1, crossed/plain 7, and 10/11/12/17/20 in one box.');
+ console.log('PASS: German/plain/footed 1, crossed 7, reject uncrossed 7, and 10/11/12/17/20 in one box.');
 }finally{await browser.close();}})().catch(e=>{console.error(e);process.exit(1)});

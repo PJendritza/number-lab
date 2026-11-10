@@ -4,9 +4,9 @@ The browser bundles a 784 → 128 ReLU → 10 softmax classifier (~1.9 MB JSON) 
 
 ## German-style numerals
 
-Training combines the 60,000 MNIST training examples with 5,000 generated examples of European-style 1s and crossed/plain 7s. The generated 1s have a leading upstroke, varied stem tilt, and optional bottom foot. Width, proportions, stroke thickness, and small coordinate variations are randomized. The rejection reference set includes these forms, not only MNIST examples. Plain 1 and uncrossed 7 remain supported.
+Training combines the 60,000 MNIST training examples with 5,000 generated examples of European-style 1s and crossed/plain 7s. The generated 1s have a leading upstroke, varied stem tilt, and optional bottom foot. Width, proportions, stroke thickness, and small coordinate variations are randomized. The rejection reference set includes these forms, not only MNIST examples. Plain 1 remains supported. The application now requires a middle crossbar for an accepted 7, following the user’s German-writing convention.
 
-The generator is `scripts/european-digits.py`. These are constructed examples, **not handwriting collected from German children**. Tests reproduce the original leading-stroke 1 that the old model guessed as 7. Additional handcrafted browser examples cover plain/footed 1, crossed/plain 7, wide/narrow zeros, and small writing near the side.
+The generator is `scripts/european-digits.py`. These are constructed examples, **not handwriting collected from German children**. Tests reproduce the original leading-stroke 1 that the old model guessed as 7. Additional handcrafted browser examples cover plain/footed 1, crossed 7 and rejection of uncrossed 7, wide/narrow zeros, and small writing near the side.
 
 Training uses an internal validation split. The final model scored 97.86% on the separate 10,000-image MNIST test set and 100% classification on 600 generated style examples from a separate seed. The latter does not establish accuracy on real German handwriting. Training stopped at the 50-iteration budget before convergence. The old model's MNIST score was 97.81%.
 
@@ -22,7 +22,7 @@ Recognition starts after a 1.5-second pause following pointer release. New strok
 
 ## Rejection and feedback
 
-A softmax classifier can be confident about noise. Acceptance is separate and target-independent:
+A softmax classifier can be confident about noise. Acceptance is separate and target-independent. The normal neural-network path requires:
 
 - Normalized ink mass: 12–240 pixels out of 784.
 - Winner confidence ≥ 0.80 and margin over runner-up ≥ 0.60.
@@ -53,6 +53,18 @@ node tests/browser.cjs
 node tests/handwriting-shapes.cjs
 node tests/handwriting-numbers.cjs
 node tests/handwriting-flow.cjs
+node tests/german-seven.cjs
 ```
 
 Set `BASE_URL` to test a different local port. The flow test writes a German 1 and then 2 through pointer events in one canvas, verifies the number 12 flies as one answer, and checks celebration and automatic advancement. The other checks cover scribble rejection, erase, pending timer cancellation, and the existing tap flow.
+
+
+## German crossbar convention
+
+An accepted 7 must have a detected middle crossbar. The check searches the central portion of the normalized ink for a continuous near-horizontal run, allowing short bars and modest slopes. The top stroke alone does not qualify. This rule runs before the neural-network confidence gates: even an overwhelmingly confident 7 prediction cannot bypass it.
+
+If the model guesses 7 without a crossbar, a separate shape check can recognize a German 1. That requires a near-upright lower stem, a leftward leading stroke near the top, and close agreement with stored 1 examples (mean squared distance ≤ 0.085). Ambiguous shapes are rejected, not automatically relabeled 1. This fallback is target-independent and reports the model's original guess/confidence separately; it does not invent a neural confidence for the corrected digit.
+
+The gate therefore intentionally rejects ordinary uncrossed 7s. Raw MNIST classification accuracy is unchanged, but accepted MNIST sevens are no longer a meaningful acceptance benchmark because many lack the required bar. `tests/german-seven.cjs` covers leading/slanted/footed 1s, crossed/uncrossed 7s, short/sloped crossbars, two stroke widths, and a forced-confident-7 classifier. Its UI check draws an uncrossed 7, verifies rejection, adds the missing middle bar, and verifies acceptance and celebration.
+
+Crossbar and stem checks are geometric heuristics, not a guarantee for every child's drawing. The expected answer is never used to decide whether ink is 1 or 7.
